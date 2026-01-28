@@ -2850,128 +2850,6 @@ ElementsTable.Toggle = (function()
 
 	return Element
 end)()
-
--- StatusBox element for Fluent library
--- Paste this into script_loader.lua inside the ElementsTable area,
--- immediately after ElementsTable.Input and before "local NotificationModule = Components.Notification"
-
-	local Element = {}
-	Element.__index = Element
-	Element.__type = "StatusBox"
-
-	local New = Creator.New
-	local AddSignal = Creator.AddSignal
-	local TextServiceLocal = game:GetService("TextService")
-	local Heartbeat = RunService.Heartbeat
-
-	function Element:New(Idx, Config)
-		assert(Config and Config.Title, "StatusBox - Missing Title")
-
-		local Status = {
-			Type = "StatusBox",
-			Value = tostring(Config.Default or ""),
-		}
-
-		-- Create a normal element container so title/desc look consistent
-		local Box = Components.Element(Config.Title, Config.Description or "", self.Container, false, Config)
-		Box.Frame.Size = UDim2.new(1, 0, 0, Config.Height or 180)
-
-		-- ScrollingFrame and content (similar to your status_box.lua)
-		local scroll = New("ScrollingFrame", {
-			Name = "StatusScroll",
-			Active = true,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Position = UDim2.new(0, 8, 0, 30),
-			Size = UDim2.new(1, -16, 1, -38),
-			CanvasSize = UDim2.new(0, 0, 0, 0),
-			ScrollBarThickness = 6,
-			AutomaticCanvasSize = Enum.AutomaticSize.None,
-			ClipsDescendants = true,
-			Parent = Box.Frame,
-		})
-
-		local content = New("TextLabel", {
-			Name = "StatusContent",
-			BackgroundTransparency = 1,
-			Position = UDim2.new(0, 0, 0, 0),
-			Size = UDim2.new(0, 0, 0, 0),
-			Font = Enum.Font.Code,
-			TextWrapped = false,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextYAlignment = Enum.TextYAlignment.Top,
-			TextColor3 = Config.Color or Creator.GetThemeProperty("Text") or Color3.fromRGB(230, 230, 230),
-			TextSize = Config.TextSize or 15,
-			Text = tostring(Config.Default or ""),
-			Parent = scroll,
-		})
-
-		local function refreshCanvas()
-			local txt = tostring(content.Text or "")
-			local size = TextServiceLocal:GetTextSize(txt, content.TextSize, content.Font, Vector2.new(1e6, 1e6))
-			local padX, padY = 10, 6
-			content.Size = UDim2.new(0, math.max(200, math.ceil(size.X)), 0, math.max(30, math.ceil(size.Y)))
-			-- Use AbsoluteSize after a heartbeat to ensure layout applied
-			pcall(function()
-				scroll.CanvasSize = UDim2.new(0, content.AbsoluteSize.X + padX, 0, content.AbsoluteSize.Y + padY)
-			end)
-		end
-
-		-- initialize after a heartbeat so AbsoluteSize is correct
-		Heartbeat:Wait()
-		refreshCanvas()
-
-		-- Keep it responsive to text changes and parent size changes
-		AddSignal(content:GetPropertyChangedSignal("Text"), refreshCanvas)
-		AddSignal(Box.Frame:GetPropertyChangedSignal("AbsoluteSize"), refreshCanvas)
-
-		-- API
-		function Status:Set(newText)
-			content.Text = tostring(newText or "")
-			refreshCanvas()
-		end
-
-		function Status:Append(moreText)
-			content.Text = content.Text .. tostring(moreText or "")
-			refreshCanvas()
-			-- scroll to bottom-right
-			Heartbeat:Wait()
-			pcall(function()
-				scroll.CanvasPosition = Vector2.new(
-					math.max(0, content.AbsoluteSize.X - scroll.AbsoluteSize.X),
-					math.max(0, content.AbsoluteSize.Y - scroll.AbsoluteSize.Y)
-				)
-			end)
-		end
-
-		function Status:Clear()
-			content.Text = ""
-			refreshCanvas()
-		end
-
-		function Status:GetText()
-			return content.Text
-		end
-
-		function Status:SetColor(clr)
-			if typeof(clr) == "Color3" then
-				content.TextColor3 = clr
-			end
-		end
-
-		-- Helpers to match other element APIs
-		Status.SetTitle = Box.SetTitle
-		Status.SetDesc = Box.SetDesc
-		Status.Visible = Box.Visible
-		Status.Elements = Box
-
-		Library.Options[Idx] = Status
-		return Status
-	end
-
-	ElementsTable.StatusBox = Element
-end
-
 ElementsTable.Dropdown = (function()
 	local Element = {}
 	Element.__index = Element
@@ -4350,6 +4228,128 @@ ElementsTable.Input = (function()
 
 	return Element
 end)()
+
+-- StatusBox element for Fluent library
+-- Insert this into script_loader.lua inside the ElementsTable area,
+-- immediately after the ElementsTable.Input block (see snippet above).
+
+do
+    local Element = {}
+    Element.__index = Element
+    Element.__type = "StatusBox"
+
+    local New = Creator.New
+    local AddSignal = Creator.AddSignal
+    local TextServiceLocal = game:GetService("TextService")
+    local Heartbeat = RunService.Heartbeat
+
+    function Element:New(Idx, Config)
+        assert(Config and Config.Title, "StatusBox - Missing Title")
+
+        local Status = {
+            Type = "StatusBox",
+            Value = tostring(Config.Default or ""),
+        }
+
+        -- Create a normal element container so title/desc look consistent
+        local Box = Components.Element(Config.Title, Config.Description or "", self.Container, false, Config)
+        Box.Frame.Size = UDim2.new(1, 0, 0, Config.Height or 180)
+
+        -- ScrollingFrame and content
+        local scroll = New("ScrollingFrame", {
+            Name = "StatusScroll",
+            Active = true,
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            Position = UDim2.new(0, 8, 0, 30),
+            Size = UDim2.new(1, -16, 1, -38),
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            ScrollBarThickness = 6,
+            AutomaticCanvasSize = Enum.AutomaticSize.None,
+            ClipsDescendants = true,
+            Parent = Box.Frame,
+        })
+
+        local content = New("TextLabel", {
+            Name = "StatusContent",
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 0, 0, 0),
+            Size = UDim2.new(0, 0, 0, 0),
+            Font = Enum.Font.Code,
+            TextWrapped = false,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            TextColor3 = Config.Color or Creator.GetThemeProperty("Text") or Color3.fromRGB(230, 230, 230),
+            TextSize = Config.TextSize or 15,
+            Text = tostring(Config.Default or ""),
+            Parent = scroll,
+        })
+
+        local function refreshCanvas()
+            local txt = tostring(content.Text or "")
+            local size = TextServiceLocal:GetTextSize(txt, content.TextSize, content.Font, Vector2.new(1e6, 1e6))
+            local padX, padY = 10, 6
+            content.Size = UDim2.new(0, math.max(200, math.ceil(size.X)), 0, math.max(30, math.ceil(size.Y)))
+            -- set CanvasSize using AbsoluteSize (protected with pcall)
+            pcall(function()
+                scroll.CanvasSize = UDim2.new(0, content.AbsoluteSize.X + padX, 0, content.AbsoluteSize.Y + padY)
+            end)
+        end
+
+        -- initialize after a heartbeat so AbsoluteSize is correct
+        Heartbeat:Wait()
+        refreshCanvas()
+
+        -- keep responsive
+        AddSignal(content:GetPropertyChangedSignal("Text"), refreshCanvas)
+        AddSignal(Box.Frame:GetPropertyChangedSignal("AbsoluteSize"), refreshCanvas)
+
+        -- API
+        function Status:Set(newText)
+            content.Text = tostring(newText or "")
+            refreshCanvas()
+        end
+
+        function Status:Append(moreText)
+            content.Text = content.Text .. tostring(moreText or "")
+            refreshCanvas()
+            -- scroll to bottom-right
+            Heartbeat:Wait()
+            pcall(function()
+                scroll.CanvasPosition = Vector2.new(
+                    math.max(0, content.AbsoluteSize.X - scroll.AbsoluteSize.X),
+                    math.max(0, content.AbsoluteSize.Y - scroll.AbsoluteSize.Y)
+                )
+            end)
+        end
+
+        function Status:Clear()
+            content.Text = ""
+            refreshCanvas()
+        end
+
+        function Status:GetText()
+            return content.Text
+        end
+
+        function Status:SetColor(clr)
+            if typeof(clr) == "Color3" then
+                content.TextColor3 = clr
+            end
+        end
+
+        -- helpers to match other element APIs
+        Status.SetTitle = Box.SetTitle
+        Status.SetDesc = Box.SetDesc
+        Status.Visible = Box.Visible
+        Status.Elements = Box
+
+        Library.Options[Idx] = Status
+        return Status
+    end
+
+    ElementsTable.StatusBox = Element
+end
 
 local NotificationModule = Components.Notification
 NotificationModule:Init(GUI)
